@@ -1,0 +1,49 @@
+---
+# Copyright 2015, Steve Lewis <steve at-symbol stevelle period me>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Ensure the DB is ready
+- include: ensure-db.yml
+
+# Ensure we have a compute instance to use for loading data to the DB
+- include: ensure-instance.yml
+
+# apply the .my.cnf mysql client config from the vagrant host
+- name: Apply MySQL client config
+  copy:
+    src: /home/vagrant/.my.cnf
+    dest: ~/.my.cnf
+    owner: root
+    group: root
+    mode: 0700
+  delegate_to: "{{ instance }}"
+  remote_user: root
+
+- name: Ensure instance pkgs
+  apt: update_cache=yes name=mariadb-client-core-5.5 state=present
+  delegate_to: "{{ instance }}"
+  remote_user: root
+
+# Load data into the DB
+- include: load-data.yml tags=load-data
+
+- name: Destroy Instance
+  shell: nova delete {{ instance_name }}
+  register: deleted_instance
+  changed_when: "'Request to delete server {{ instance_name }} has been accepted.' == deleted_instance.stdout"
+  failed_when: "'ERROR' in deleted_instance.stdout"
+  tags: destroy-instance
+
+- name: Record success
+  command: cp /home/vagrant/evedump/mysql-latest.tar.bz2.md5 /home/vagrant/evedump/mysql-prior.tar.bz2.md5

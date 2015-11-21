@@ -1,0 +1,31 @@
+---
+# Copyright 2015, Steve Lewis <steve at-symbol stevelle period me>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Ensure evedump directory
+  file: path=/home/vagrant/evedump state=directory
+
+- name: Fetch latest evedump checksum
+  get_url:
+    url: https://www.fuzzwork.co.uk/dump/mysql-latest.tar.bz2.md5
+    dest: /home/vagrant/evedump/mysql-latest.tar.bz2.md5
+
+- name: Compare latest evedump checksum to prior
+  command: diff -N /home/vagrant/evedump/mysql-latest.tar.bz2.md5 /home/vagrant/evedump/mysql-prior.tar.bz2.md5
+  register: delta
+  changed_when: delta.stdout_lines | length > 0
+  failed_when: false
+
+- include: ensure-latest-data.yml
+  when: force_update | bool or delta.stdout_lines | length > 0

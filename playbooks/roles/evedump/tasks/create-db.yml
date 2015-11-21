@@ -1,0 +1,32 @@
+---
+# Copyright 2015, Steve Lewis <steve at-symbol stevelle period me>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Select DB Flavor
+  shell: trove --service-type {{ service_type }} flavor-list | grep "{{ db_flavor }}" | tr -s ' ' | cut -d ' ' -f 2
+  register: db_flavor
+  changed_when: false
+
+- name: Create DB
+  command: trove --service-type {{ service_type }} create --size {{ db_size }} --databases evedump --users {{ db_user }}:{{ db_password }} --datastore mariadb {{ db_instance_name }} {{ db_flavor.stdout }}
+  register: db_created
+  failed_when: '"usage: trove create" in db_created.stdout'
+
+- name: Ensure DB is Active
+  command: trove --service-type rax:database show {{ db_instance_name }} 
+  failed_when: "'ERROR' in active_db.stderr"
+  register: active_db
+  until: "'ACTIVE' in active_db.stdout"
+  retries: 18
+  delay: 10

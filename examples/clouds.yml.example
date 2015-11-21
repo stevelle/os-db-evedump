@@ -1,0 +1,22 @@
+---
+#
+# See also https://github.com/openstack/os-client-config
+mordred:
+    cloud: hp
+    username: mordred@inaugust.com
+    password: XXXXXXXXXX
+    project_name: mordred@inaugust.com
+    region_name: region-b.geo-1
+  monty:
+    cloud: https://region-b.geo-1.identity.hpcloudsvc.com:35357/v2.0
+    username: monty.taylor@hp.com
+    password: XXXXXXXXX
+    project_name: monty.taylor@hp.com-default-tenant
+    region_name: region-b.geo-1
+    dns_service_type: hpext:dns
+rax:
+    cloud: rackspace
+    username: openstackci
+    password: XXXXXXX
+    project_id: 610275
+    region_name: DFW,ORD,IAD

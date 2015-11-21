@@ -1,0 +1,63 @@
+---
+# Copyright 2015, Steve Lewis <steve at-symbol stevelle period me>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Ensure .ssh dir
+  file: path=/home/vagrant/.ssh state=directory
+  tags:
+    - instance
+
+- name: Ensure key exists locally
+  command: ssh-keygen -q -N "" -f /home/vagrant/.ssh/{{ key_name }} -C "OpenStack Key {{ key_name }}"
+    creates=/home/vagrant/.ssh/{{ key_name }}
+  tags:
+    - instance
+
+- name: Read local key signature
+  shell: ssh-keygen -lf /home/vagrant/.ssh/{{ key_name }}.pub | cut -d ' ' -f 2
+  register: key_print
+  changed_when: false
+  tags:
+    - instance
+
+- name: Ensure key available to ssh
+  command: ssh-add /home/vagrant/.ssh/{{ key_name }}
+
+- name: Search for key in the cloud
+  command: nova keypair-list
+  register: found_key
+  changed_when: key_name not in found_key.stdout
+  failed_when: false
+  tags:
+    - instance
+
+# The key name may be in use by a key we don't have anymore
+- name: Purge lost key from cloud
+  command: nova keypair-delete {{ key_name }}
+  when: key_name in found_key.stdout and key_print.stdout not in found_key.stdout
+  register: purge_result
+  tags:
+    - instance
+
+- name: Wait for key cleanup
+  command: nova keypair-show {{ key_name }}
+  register: key_delete_delay
+  when: purge_result | success
+  until: "'{{ key_name }}' not in key_delete_delay.stdout"
+
+- name: Upload key to cloud
+  command: nova keypair-add --pub-key /home/vagrant/.ssh/{{ key_name }}.pub {{ key_name }}
+  when: purge_result | success or key_name not in found_key.stdout
+  tags:
+    - instance

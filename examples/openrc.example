@@ -1,0 +1,6 @@
+export OS_AUTH_URL="https://identity.api.rackspacecloud.com/v2.0/"
+export OS_AUTH_SYSTEM=keystone
+export OS_REGION_NAME=DWF
+export OS_USERNAME=your user name here
+export OS_TENANT_ID=your account id
+export OS_PASSWORD="your password here"
