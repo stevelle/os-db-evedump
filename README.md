@@ -5,7 +5,9 @@ Because sometimes, "Spreadsheets in Space" get dull, and needs
 to be spiced up a bit.
 
 This Rube Goldberg machine, uses a Vagrant VM. The Vagrant VM 
-is prepared with two Ansible playbooks which can be used to.
+is prepared with two Ansible playbooks which can be used to
+ensure your favorite OpenStack cloud db is loaded with the
+latest evedump.
 
 **sync-evedump.yml**
 
